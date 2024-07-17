@@ -10,7 +10,6 @@ import pers.reganlaw.video.databinding.ActivityVideoPreviewBinding
 class VideoPreviewActivity : AppCompatActivity() {
 	private lateinit var binding: ActivityVideoPreviewBinding
 	private var videoUri: Uri? = null
-	private lateinit var videoViewModel: VideoViewModel
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		binding = ActivityVideoPreviewBinding.inflate(layoutInflater)
