@@ -34,7 +34,7 @@
             android:label="@string/title_activity_camera"
             android:theme="@style/Theme.Video.Fullscreen" />
         <activity
-            android:name=".VideoPreview"
+            android:name=".VideoPreviewActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

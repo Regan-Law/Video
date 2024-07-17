@@ -2,6 +2,7 @@ package pers.reganlaw.video
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
@@ -166,6 +167,10 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 							val msg =
 								"Video Capture Succeed：${recorderEvent.outputResults.outputUri}"
 							toast(msg)
+							val videoUri = recorderEvent.outputResults.outputUri
+							val intent = Intent(this, VideoPreviewActivity::class.java)
+							intent.putExtra("preview", videoUri.toString())
+							startActivity(intent)
 							Log.d(TAG, msg)
 						} else {
 							recording?.close()
