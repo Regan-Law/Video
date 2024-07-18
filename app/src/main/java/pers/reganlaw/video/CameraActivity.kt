@@ -58,7 +58,7 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 
 	private fun Long.toFormattedTime(): String {
 		val second = ((this / 1000) % 60).toInt()
-		val min = ((this / (1000 * 60) % 60)).toInt()
+		val min = (this / (1000 * 60) % 60).toInt()
 		val hour = ((this / (1000 * 60 * 60)) % 24).toInt()
 		return if (hour > 0) String.format(
 			Locale.CHINA,
@@ -79,7 +79,8 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 		arrayOf(
 			Manifest.permission.CAMERA,
 			Manifest.permission.RECORD_AUDIO,
-			Manifest.permission.WRITE_EXTERNAL_STORAGE
+			Manifest.permission.WRITE_EXTERNAL_STORAGE,
+			Manifest.permission.READ_EXTERNAL_STORAGE
 		)
 	}
 

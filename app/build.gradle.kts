@@ -13,7 +13,9 @@ android {
 		targetSdk = 34
 		versionCode = 1
 		versionName = "1.0"
-
+		ndk {
+			abiFilters.addAll(mutableSetOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+		}
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
 
@@ -59,6 +61,7 @@ dependencies {
 	implementation(libs.kotlinx.coroutines.android)
 	implementation(libs.kotlinx.coroutines.core)
 	implementation(libs.videoprocessor)
+	implementation(libs.rxffmpeg)
 	testImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)

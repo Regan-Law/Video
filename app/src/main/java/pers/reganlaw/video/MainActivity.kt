@@ -1,25 +1,11 @@
 package pers.reganlaw.video
 
-import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Point
-import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
-import android.util.Size
 import android.view.View.GONE
 import android.view.View.VISIBLE
-import android.view.WindowInsets
-import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
@@ -32,6 +18,9 @@ import com.abedelazizshe.lightcompressorlibrary.config.SharedStorageConfiguratio
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import pers.reganlaw.video.databinding.ActivityMainBinding
+import pers.reganlaw.video.utils.Utils.getVideoPreviewBitmap
+import pers.reganlaw.video.utils.Utils.toast
+import pers.reganlaw.video.utils.Utils.videoCompression
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -39,13 +28,13 @@ class MainActivity : AppCompatActivity() {
 	private lateinit var binding: ActivityMainBinding
 	private var videoUri: Uri? = null
 	private var compressed = false
-	private val activityResultLauncher: ActivityResultLauncher<Intent> =
-		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
-			if (activityResult.resultCode == Activity.RESULT_OK) {
-				val uri = Uri.parse(intent.getStringExtra("preparedToCompress"))
-				videoCompression(uri)
-			}
-		}
+//	private val activityResultLauncher: ActivityResultLauncher<Intent> =
+//		registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
+//			if (activityResult.resultCode == Activity.RESULT_OK) {
+//				val uri = Uri.parse(intent.getStringExtra("preparedToCompress"))
+//				videoCompression(uri)
+//			}
+//		}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -81,7 +70,7 @@ class MainActivity : AppCompatActivity() {
 	private fun isCompressed() {
 		if (compressed) {
 			lifecycleScope.launch(Dispatchers.Main) {
-				val thumbnailBitmap = generateVideoThumbnail(videoUri!!)
+				val thumbnailBitmap = getVideoPreviewBitmap(this@MainActivity, videoUri!!)
 				thumbnailBitmap.let {
 					binding.compressed.setImageBitmap(it)
 				}
@@ -93,7 +82,17 @@ class MainActivity : AppCompatActivity() {
 	private fun isCompress(intent: Intent) {
 		if (intent.getBooleanExtra("isCompress", false)) {
 			val uri = Uri.parse(intent.getStringExtra("preparedToCompress"))
-			videoCompression(uri)
+			videoCompression(this.lifecycleScope, this, uri) {
+				if (compressed) {
+					lifecycleScope.launch(Dispatchers.Main) {
+						val thumbnailBitmap = getVideoPreviewBitmap(this@MainActivity, videoUri!!)
+						thumbnailBitmap.let {
+							binding.compressed.setImageBitmap(it)
+						}
+					}
+				}
+			}
+//			videoCompression(uri)
 		}
 	}
 
@@ -101,18 +100,18 @@ class MainActivity : AppCompatActivity() {
 		val uriList = listOf(uri)
 		binding.progress.bringToFront()
 		binding.progress.visibility = VISIBLE
-		val outputDirectory = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-		val videoPath = getVideoPathFromUri(uri)
 		val videoName = SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss",
 			Locale.CHINA
 		).format(System.currentTimeMillis()) + "compressed"
-		var media = MediaMetadataRetriever()
-		media.setDataSource(videoPath)
-		val extractMetadata =
-			media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
-		val bitRate = ((extractMetadata?.toInt() ?: 0) * 0.4).toInt()
-		media.release()
+//		val outputDirectory = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+//		val videoPath = getVideoPathFromUri(uri)
+//		var media = MediaMetadataRetriever()
+//		media.setDataSource(videoPath)
+//		val extractMetadata =
+//			media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+//		val bitRate = ((extractMetadata?.toInt() ?: 0) * 0.4).toInt()
+//		media.release()
 //		val fileName = "$videoName.mp4"
 //		val outputFile = File(outputDirectory, fileName).absolutePath
 		val config = Configuration(
@@ -170,63 +169,27 @@ class MainActivity : AppCompatActivity() {
 		}
 	}
 
-	private fun getVideoFilePathFromUri(context: Context, videoUri: Uri): String? {
-		var filePath: String? = null
-		val resolver = context.contentResolver
+//	private fun generateVideoThumbnail(videoUri: Uri): Bitmap {
+//		val thumbnailSize = Point()
+//		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//			val windowMetrics = windowManager.currentWindowMetrics
+//			val insets = windowMetrics.windowInsets
+//				.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+//			val bounds = windowMetrics.bounds
+//			thumbnailSize.set(
+//				bounds.width() - insets.left - insets.right,
+//				bounds.height() - insets.top - insets.bottom
+//			)
+//		} else {
+//			// For devices running an SDK before R
+//			val display = windowManager.defaultDisplay
+//			display?.getSize(thumbnailSize)
+//		}
+//		val thumbWidth = thumbnailSize.x / 4
+//		val thumbHeight = thumbnailSize.y / 4
+//		return contentResolver.loadThumbnail(videoUri, Size(thumbWidth, thumbHeight), null)
+//	}
 
-		resolver.query(videoUri, null, null, null, null)?.use { cursor ->
-			if (cursor.moveToFirst()) {
-				val columnIndex = cursor.getColumnIndex(MediaStore.Video.Media.DATA)
-				if (columnIndex != -1) {
-					filePath = cursor.getString(columnIndex)
-				}
-			}
-		}
-
-		return filePath
-	}
-
-	@SuppressLint("Range")
-	private fun getVideoPathFromUri(uri: Uri): String? {
-		return contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-			if (cursor.moveToFirst()) {
-				cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.DATA))
-			} else {
-				null
-			}
-		}
-
-	}
-
-
-	private fun generateVideoThumbnail(videoUri: Uri): Bitmap {
-		val thumbnailSize = Point()
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-			val windowMetrics = windowManager.currentWindowMetrics
-			val insets = windowMetrics.windowInsets
-				.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
-			val bounds = windowMetrics.bounds
-			thumbnailSize.set(
-				bounds.width() - insets.left - insets.right,
-				bounds.height() - insets.top - insets.bottom
-			)
-		} else {
-			// For devices running an SDK before R
-			val display = windowManager.defaultDisplay
-			display?.getSize(thumbnailSize)
-		}
-		val thumbWidth = thumbnailSize.x / 4
-		val thumbHeight = thumbnailSize.y / 4
-		return contentResolver.loadThumbnail(videoUri, Size(thumbWidth, thumbHeight), null)
-	}
-
-	private fun Point.toSize(): Size {
-		return Size(this.x, this.y)
-	}
-
-	private fun toast(m: String) {
-		Toast.makeText(this, m, Toast.LENGTH_LONG).show()
-	}
 
 	companion object {
 		const val TAG = "Video"
