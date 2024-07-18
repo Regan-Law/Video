@@ -15,6 +15,7 @@
         android:max="100"
         android:visibility="gone"
         android:progress="0"
+        android:progressTint="@color/white"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -34,15 +35,32 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:layout_margin="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView">
 
-        <ImageButton
+        <ImageView
+            android:id="@+id/compressed"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:contentDescription="@string/compressed_video" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/delete_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginTop="-20dp"
+            android:layout_marginStart="-30dp"
+            android:layout_marginEnd="-20dp"
+            android:contentDescription="@string/delete_video"
+            android:src="@drawable/round_close" />
+
+        <ImageButton
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:id="@+id/bt_add"
             android:contentDescription="@string/description_add"
             android:src="@drawable/add" />

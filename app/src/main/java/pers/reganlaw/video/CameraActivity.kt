@@ -4,12 +4,14 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.MediaStore
 import android.util.Log
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -67,11 +69,19 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 		) else String.format(Locale.CHINA, "%02d:%02d", min, second)
 	}
 
-	private val permissionArray = arrayOf(
-		Manifest.permission.CAMERA,
-		Manifest.permission.RECORD_AUDIO,
-		Manifest.permission.WRITE_EXTERNAL_STORAGE,
-	)
+	private val permissionArray = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+		arrayOf(
+			Manifest.permission.CAMERA,
+			Manifest.permission.RECORD_AUDIO,
+			Manifest.permission.WRITE_EXTERNAL_STORAGE
+		)
+	} else {
+		arrayOf(
+			Manifest.permission.CAMERA,
+			Manifest.permission.RECORD_AUDIO,
+			Manifest.permission.WRITE_EXTERNAL_STORAGE
+		)
+	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -116,6 +126,7 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 	}
 
 	private fun startRecording() {
+		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 		val videoCapture = this.videoCapture ?: return
 		binding.btRecord.isEnabled = false
 		val outputFile = File(this.getExternalFilesDir(null), "${System.currentTimeMillis()}.mp4")
@@ -164,14 +175,12 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 
 					is VideoRecordEvent.Finalize -> {
 						if (!recorderEvent.hasError()) {
-							val msg =
-								"Video Capture Succeed：${recorderEvent.outputResults.outputUri}"
-							toast(msg)
 							val videoUri = recorderEvent.outputResults.outputUri
 							val intent = Intent(this, VideoPreviewActivity::class.java)
 							intent.putExtra("preview", videoUri.toString())
 							startActivity(intent)
-							Log.d(TAG, msg)
+							finish()
+							Log.d(TAG, "VideoUri${videoUri}")
 						} else {
 							recording?.close()
 							recording = null

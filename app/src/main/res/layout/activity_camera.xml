@@ -28,15 +28,14 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <ImageButton
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
         android:id="@+id/bt_record"
         android:contentDescription="@string/is_recording"
         app:layout_constraintEnd_toEndOf="parent"
         android:src="@drawable/start"
         android:background="?attr/selectableItemBackgroundBorderless"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="40sp" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
