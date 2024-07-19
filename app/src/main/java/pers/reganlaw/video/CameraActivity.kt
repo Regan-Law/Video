@@ -102,7 +102,6 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 						toast("获取部分权限成功，但部分权限未正常授予")
 						return
 					}
-					toast("获取权限成功")
 					startCamera()
 				}
 
@@ -218,7 +217,9 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 		recorder = Recorder.Builder()
 			.setQualitySelector(QualitySelector.from(Quality.HD))
 			.build()
+		
 		videoCapture = VideoCapture.withOutput(recorder)
+
 		try {
 			cameraProvider.unbindAll()
 			cameraProvider.bindToLifecycle(this, cameraSelector, preview, videoCapture)

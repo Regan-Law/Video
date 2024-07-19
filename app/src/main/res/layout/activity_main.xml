@@ -47,16 +47,16 @@
             android:layout_height="80dp"
             android:contentDescription="@string/compressed_video" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/delete_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_marginTop="-20dp"
-            android:layout_marginStart="-30dp"
-            android:layout_marginEnd="-20dp"
-            android:contentDescription="@string/delete_video"
-            android:src="@drawable/round_close" />
+        <!--        <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+        <!--            android:id="@+id/delete_button"-->
+        <!--            android:layout_width="wrap_content"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:background="?attr/selectableItemBackgroundBorderless"-->
+        <!--            android:layout_marginTop="-20dp"-->
+        <!--            android:layout_marginStart="-30dp"-->
+        <!--            android:layout_marginEnd="-20dp"-->
+        <!--            android:contentDescription="@string/delete_video"-->
+        <!--            android:src="@drawable/round_close" />-->
 
         <ImageButton
             android:layout_width="80dp"

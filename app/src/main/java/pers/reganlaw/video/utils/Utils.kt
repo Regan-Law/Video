@@ -1,6 +1,5 @@
 package pers.reganlaw.video.utils
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
@@ -13,6 +12,8 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.Toast
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.abedelazizshe.lightcompressorlibrary.CompressionListener
@@ -21,6 +22,7 @@ import com.abedelazizshe.lightcompressorlibrary.VideoQuality
 import com.abedelazizshe.lightcompressorlibrary.config.Configuration
 import com.abedelazizshe.lightcompressorlibrary.config.SaveLocation
 import com.abedelazizshe.lightcompressorlibrary.config.SharedStorageConfiguration
+import com.hw.videoprocessor.VideoProcessor
 import io.microshow.rxffmpeg.RxFFmpegInvoke
 import io.microshow.rxffmpeg.RxFFmpegSubscriber
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -32,6 +34,7 @@ import pers.reganlaw.video.databinding.ActivityMainBinding
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
+
 
 object Utils {
 	private const val TAG = "VideoTest"
@@ -78,18 +81,17 @@ object Utils {
 					override fun onStart(index: Int) {}
 
 					override fun onSuccess(index: Int, size: Long, path: String?) {
-						updateUIFromBackgroundThread(context, binding, null, path)
+						updateUIFromBackgroundThread(context, binding, null)
 					}
 
 					override fun onCancelled(index: Int) {
-						updateUIFromBackgroundThread(context, binding, null, null, true)
+						updateUIFromBackgroundThread(context, binding, null, true)
 					}
 
 					override fun onFailure(index: Int, failureMessage: String) {
 						updateUIFromBackgroundThread(
 							context,
 							binding,
-							null,
 							null,
 							false,
 							failureMessage
@@ -104,7 +106,6 @@ object Utils {
 		context: Context,
 		binding: ActivityMainBinding,
 		percent: Float? = null,
-		path: String? = null,
 		cancelled: Boolean = false,
 		failureMessage: String? = null
 	) {
@@ -114,18 +115,17 @@ object Utils {
 				when {
 					percent != null -> {
 						Log.d(CameraActivity.TAG, percent.toString())
-						binding.progress.progress = (percent * 100).toInt()
-					}
-
-					path != null -> {
-						Toast.makeText(context, "Video compressed success", Toast.LENGTH_SHORT)
-							.show()
-						binding.progress.visibility = View.GONE
+						if (percent < 1) {
+							binding.progress.visibility = VISIBLE
+							binding.progress.progress = ((percent - 0.5) * 200).toInt()
+						} else {
+							binding.progress.visibility = GONE
+						}
 					}
 
 					cancelled -> {
 						Toast.makeText(context, "Compression cancelled", Toast.LENGTH_SHORT).show()
-						binding.progress.visibility = View.GONE
+						binding.progress.visibility = GONE
 					}
 
 					failureMessage != null -> {
@@ -134,7 +134,7 @@ object Utils {
 							"Video compress failed: $failureMessage",
 							Toast.LENGTH_SHORT
 						).show()
-						binding.progress.visibility = View.GONE
+						binding.progress.visibility = GONE
 					}
 				}
 			}
@@ -147,23 +147,27 @@ object Utils {
 	}
 
 
-	fun videoCompression(
+	fun videoCompressionRx(
 		lifecycleScope: LifecycleCoroutineScope,
 		context: Context,
 		uri: Uri,
+		binding: ActivityMainBinding,
 		onCompletion: () -> Unit
 	) {
 		lifecycleScope.launch(Dispatchers.IO) {
 			try {
-				val inputPath = getVideoPathFromUri(context.contentResolver, uri)
-				val outputPath = getOutputPath(context, inputPath)
+				var inputPath = getFilePathFromContentUri(uri, context.contentResolver)
+				Log.d(TAG, "inputPath${inputPath}")
+//				inputPath = "/storage/emulated/0/Movies/video/5.mp4"
+				Log.d(TAG, "inputPaths${inputPath}")
+				val outputPath = getOutputPath(context)
 
 				// 构建FFmpeg命令
 				val command = arrayOf(
 					"-y", // 覆盖输出文件
 					"-i", inputPath, // 输入文件
 					"-vcodec", "libx264", // 使用H.264编码器
-					"-crf", "23", // 设置CRF值，数值越小质量越高
+					"-crf", "20", // 设置CRF值，数值越小质量越高
 					"-preset", "medium", // 设置预设速度与质量的平衡
 					outputPath // 输出文件
 				)
@@ -175,14 +179,16 @@ object Utils {
 					.subscribe(object : RxFFmpegSubscriber() {
 						override fun onFinish() {
 							Log.d(TAG, "Video compression finished.")
-
+							binding.progress.visibility = GONE
 							context.toast("Video compressed successfully.")
 							onCompletion.invoke()
 
 						}
 
 						override fun onProgress(progress: Int, time: Long) {
-
+							Log.d(TAG, "loading $progress")
+							binding.progress.visibility = View.VISIBLE
+							binding.progress.progress = progress
 						}
 
 						override fun onCancel() {
@@ -194,9 +200,7 @@ object Utils {
 
 						override fun onError(message: String) {
 							Log.e(TAG, "Error during video compression: $message")
-
 							context.toast("Video compression failed: $message")
-
 						}
 					})
 			} catch (e: Exception) {
@@ -205,46 +209,84 @@ object Utils {
 		}
 	}
 
-	private fun getOutputPath(context: Context, inputPath: String?): String {
+	fun videoCompressionVP(
+		lifecycleScope: LifecycleCoroutineScope,
+		context: Context,
+		uri: Uri,
+		binding: ActivityMainBinding
+	) {
+		lifecycleScope.launch(Dispatchers.IO) {
+			try {
+				var inputPath = getFilePathFromContentUri(uri, context.contentResolver)
+				inputPath = "/storage/emulated/0/Movies/video/2024-07-19 16_57_08.mp4"
+				val outputPath = getOutputPath(context)
+				val retriever = MediaMetadataRetriever()
+				retriever.setDataSource(context, uri)
+				val originWidth =
+					retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)!!
+						.toInt()
+				val originHeight =
+					retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)!!
+						.toInt()
+				val bitrate =
+					retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)!!
+						.toInt()
+				VideoProcessor.processor(context)
+					.input(inputPath)
+					.output(outputPath)
+					.frameRate(45)
+//					.bitrate(bitrate / 2)
+					.progressListener { progress ->
+						Log.d(TAG, "loading $progress")
+						updateUIFromBackgroundThread(context, binding, progress)
+					}
+					.process()
+			} catch (e: Exception) {
+				Log.e(TAG, "Error getting video file path: ${e.message}")
+			}
+		}
+
+	}
+
+	private fun getOutputPath(context: Context): String {
 		val outputDirectory = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
 		val fileName = SimpleDateFormat(
-			"yyyy-MM-dd_HH-mm-ss",
+			"yyyy-MM-dd HH:mm:ss",
 			Locale.getDefault()
 		).format(System.currentTimeMillis()) + ".mp4"
 		return File(outputDirectory, fileName).absolutePath
 	}
 
-	@SuppressLint("Range")
-	private fun getVideoPathFromUri(contentResolver: ContentResolver, uri: Uri): String? {
-		return contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-			if (cursor.moveToFirst()) {
-				cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.DATA))
-			} else {
-				null
-			}
-		}
-
+	//Uri转文件路径
+	private fun getFilePathFromContentUri(
+		uri: Uri?,
+		contentResolver: ContentResolver
+	): String {
+		val filePath: String
+		val filePathColumn = arrayOf(MediaStore.MediaColumns.DATA)
+		val cursor = contentResolver.query(uri!!, filePathColumn, null, null, null)
+		cursor!!.moveToFirst()
+		val columnIndex = cursor.getColumnIndex(filePathColumn[0])
+		filePath = cursor.getString(columnIndex)
+		cursor.close()
+		return filePath
 	}
 
 	fun getVideoPreviewBitmap(context: Context, videoUri: Uri): Bitmap? {
 		try {
 			// 初始化MediaMetadataRetriever对象
 			val retriever = MediaMetadataRetriever()
-
 			// 直接使用Uri设置数据源，避免使用FileDescriptor
 			retriever.setDataSource(context, videoUri)
-
 			// 提取视频的某一帧作为封面，这里提取视频的中间帧作为示例
-			// 你可以根据需要调整timeUs参数来获取不同时间点的帧
+			// 根据需要调整timeUs参数来获取不同时间点的帧
 			val timeUs =
 				retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
 					?.div(2) ?: 0
 			val bitmap =
 				retriever.getFrameAtTime(timeUs * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-
 			// 关闭MediaMetadataRetriever并释放资源
 			retriever.release()
-
 			return bitmap
 		} catch (e: Exception) {
 			Log.e("VideoUtils", "Error getting video preview bitmap: ${e.message}")
