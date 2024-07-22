@@ -218,7 +218,7 @@ object Utils {
 		lifecycleScope.launch(Dispatchers.IO) {
 			try {
 				var inputPath = getFilePathFromContentUri(uri, context.contentResolver)
-				inputPath = "/storage/emulated/0/Movies/video/2024-07-19 16_57_08.mp4"
+				inputPath = "/storage/emulated/0/Movies/video/2024-07-21 09_37_57.mp4"
 				val outputPath = getOutputPath(context)
 				val retriever = MediaMetadataRetriever()
 				retriever.setDataSource(context, uri)
@@ -234,7 +234,7 @@ object Utils {
 				VideoProcessor.processor(context)
 					.input(inputPath)
 					.output(outputPath)
-					.frameRate(45)
+					.frameRate(18)
 //					.bitrate(bitrate / 2)
 					.progressListener { progress ->
 						Log.d(TAG, "loading $progress")

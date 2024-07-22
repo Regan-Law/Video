@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -11,6 +12,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.MediaStore
 import android.util.Log
+import android.util.Range
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -46,6 +48,8 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 	private lateinit var recorder: Recorder
 	private var recording: Recording? = null
 	private var videoCapture: VideoCapture<Recorder>? = null
+
+	//	private var videoCaptureBuilder: VideoCapture<VideoOutput>? = null
 	private val handler = Handler(Looper.getMainLooper())
 	private val updateTimer = object : Runnable {
 		override fun run() {
@@ -124,7 +128,7 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 	}
 
 	private fun startRecording() {
-		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)//保持屏幕常亮
 		val videoCapture = this.videoCapture ?: return
 		binding.btRecord.isEnabled = false
 		val outputFile = File(this.getExternalFilesDir(null), "${System.currentTimeMillis()}.mp4")
@@ -207,6 +211,7 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 		)
 	}
 
+	//CameraX版本1.3.3
 	private fun bindCameraUseCases() {
 		val cameraSelector = CameraSelector.Builder()
 			.requireLensFacing(CameraSelector.LENS_FACING_BACK)
@@ -214,19 +219,60 @@ class CameraActivity : AppCompatActivity(), LifecycleOwner {
 		preview = Preview.Builder().build().also {
 			it.setSurfaceProvider(binding.preview.surfaceProvider)
 		}
+		val fps = Range.create(15, 15)
+		val mimeType = MediaFormat.createVideoFormat(
+			MediaFormat.MIMETYPE_VIDEO_HEVC,
+			1280,
+			720
+		)
 		recorder = Recorder.Builder()
+			.setTargetVideoEncodingBitRate(50_000)
 			.setQualitySelector(QualitySelector.from(Quality.HD))
 			.build()
-		
+//		videoCapture = VideoCapture.Builder(recorder).setTargetFrameRate(fps).build()
 		videoCapture = VideoCapture.withOutput(recorder)
-
 		try {
 			cameraProvider.unbindAll()
-			cameraProvider.bindToLifecycle(this, cameraSelector, preview, videoCapture)
+			cameraProvider.bindToLifecycle(
+				this,
+				cameraSelector,
+				preview,
+				videoCapture,
+			)
 		} catch (e: Exception) {
 			Log.e(TAG, "Use case bind failed", e)
 		}
 	}
+	//	CameraX版本1.1.0
+//	private fun bindCameraUseCases() {
+//		val cameraSelector = CameraSelector.Builder()
+//			.requireLensFacing(CameraSelector.LENS_FACING_BACK)
+//			.build()
+//		preview = Preview.Builder().build().also {
+//			it.setSurfaceProvider(binding.preview.surfaceProvider)
+//		}
+//		val fps = Range.create(15, 15)
+//		val mimeType = MediaFormat.createVideoFormat(
+//			MediaFormat.MIMETYPE_VIDEO_HEVC,
+//			1280,
+//			720
+//		)
+//		recorder = Recorder.Builder()
+//			.setQualitySelector(QualitySelector.from(Quality.HD))
+//			.build()
+//		videoCapture = VideoCapture.withOutput(recorder)
+//		try {
+//			cameraProvider.unbindAll()
+//			cameraProvider.bindToLifecycle(
+//				this,
+//				cameraSelector,
+//				preview,
+//				videoCapture,
+//			)
+//		} catch (e: Exception) {
+//			Log.e(TAG, "Use case bind failed", e)
+//		}
+//	}
 
 	private fun startTimer() {
 		binding.time.isVisible = true

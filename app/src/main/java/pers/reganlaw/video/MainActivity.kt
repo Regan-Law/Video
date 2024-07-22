@@ -20,7 +20,6 @@ import kotlinx.coroutines.launch
 import pers.reganlaw.video.databinding.ActivityMainBinding
 import pers.reganlaw.video.utils.Utils.getVideoPreviewBitmap
 import pers.reganlaw.video.utils.Utils.toast
-import pers.reganlaw.video.utils.Utils.videoCompressionVP
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -83,7 +82,7 @@ class MainActivity : AppCompatActivity() {
 		if (intent.getBooleanExtra("isCompress", false)) {
 			val uri = Uri.parse(intent.getStringExtra("preparedToCompress"))
 //			videoCompression(uri)
-			videoCompressionVP(this.lifecycleScope, this, uri, binding)
+//			videoCompressionVP(this.lifecycleScope, this, uri, binding)
 //			videoCompressionRx(this.lifecycleScope, this, uri, binding) {
 //				if (compressed) {
 //					lifecycleScope.launch(Dispatchers.Main) {
